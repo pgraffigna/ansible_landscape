@@ -1,0 +1,21 @@
+---
+- name: Agrega ppa repo
+  apt_repository:
+    repo: ppa:landscape/19.10
+
+- name: Actualiza la cache de los repos
+  apt:
+    update_cache: yes    
+
+- name: Actualiza los repos e instala el programa evitando cuadros interactivos
+  command: apt-get install -y landscape-server-quickstart
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+  
+- name: Enviar certificados del Server a Control
+  run_once: yes
+  fetch: 
+    src: /etc/ssl/certs/landscape_server_ca.crt
+    dest: /tmp/
+    flat: yes
+  when: inventory_hostname in groups["master"]        

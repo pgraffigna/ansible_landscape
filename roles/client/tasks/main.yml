@@ -1,0 +1,38 @@
+---
+- name: actualiza la cache de los repos e instala los programas necesarios
+  apt:
+    name: ['landscape-client','python-pip']
+    update_cache: yes  
+
+- name: instala pexpect via pip para poder usar modulo expect 
+  pip:
+    name: pexpect
+    state: latest
+
+- name: Copiar certificados desde Control a Cliente
+  copy: 
+    src: /tmp/landscape_server_ca.crt
+    dest: /etc/landscape
+    owner: root
+    group: root
+  when: inventory_hostname in groups["node"]
+
+- name: Agrega linea en archivo de configuracion
+  lineinfile:
+    path: /etc/landscape/client.conf
+    line: ssl_public_key = /etc/landscape/landscape_server_ca.crt
+
+- name: Agrega Cliente a Servidor
+  expect:
+    echo: yes
+    command: landscape-config --computer-title "{{ cliente }}" --account-name standalone --url "https://{{ servidor }}/message-system" --ping-url "http://{{ servidor }}/ping"    
+    responses:
+      '(?i)Start Landscape client on boot\? \[Y/n\]:': 'y' 
+      '(?i)Account registration key:': ''
+      '(?i)HTTP proxy URL:': ''
+      '(?i)HTTPS proxy URL:': ''
+      '(?i)Enable script execution\? \[y/N\]:': 'n'
+      '(?i)Access group:': 'testing'
+      '(?i)Tags:': 'node01'
+      '(?i)Request a new registration for this computer now\? \[Y/n\]:': 'y'
+    
